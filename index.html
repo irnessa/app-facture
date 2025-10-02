@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEDICLEAN - Générateur de Factures</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --pink: #FF69B4;
+            --light-pink: #FFF0F7;
+            --header-pink: #FFE6F2;
+        }
+        
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, var(--pink), #FFB6C1);
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 500px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .header {
+            text-align: center;
+            background: var(--pink);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        input, select, textarea { 
+            width: 100%; 
+            padding: 12px; 
+            border: 2px solid #ddd; 
+            border-radius: 8px; 
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus {
+            border-color: var(--pink);
+            outline: none;
+        }
+        button { 
+            background: var(--pink); 
+            color: white; 
+            padding: 15px; 
+            border: none; 
+            border-radius: 8px; 
+            width: 100%; 
+            font-size: 18px; 
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+        button:hover {
+            background: #E0559C;
+        }
+        .prestation { 
+            border: 2px solid var(--pink); 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 10px;
+            background: var(--light-pink);
+        }
+        .hidden { display: none; }
+        .remove-btn {
+            background: #ff4444;
+            font-size: 14px;
+            padding: 8px;
+        }
+        .add-btn {
+            background: #44ff44;
+            font-size: 14px;
+            padding: 8px;
+        }
+        #facturePreview {
+            display: none;
+            margin-top: 20px;
+            border: 2px solid var(--pink);
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧹 DEDICLEAN</h1>
+            <p>Générateur de Factures Mobile</p>
+        </div>
+        
+        <form id="factureForm">
+            <div class="form-group">
+                <label>👤 Nom du client:</label>
+                <input type="text" id="client_nom" required placeholder="Ex: Madame Perrey">
+            </div>
+            
+            <div class="form-group">
+                <label>🏠 Adresse:</label>
+                <input type="text" id="client_adresse" required placeholder="Ex: Airbnb Côté Cour, Dijon">
+            </div>
+            
+            <div class="form-group">
+                <label>📅 Mois de facturation:</label>
+                <input type="text" id="mois_facture" value="SEPTEMBRE 2025" required>
+            </div>
+            
+            <div class="form-group">
+                <label>🔗 Lien de paiement Revolut:</label>
+                <input type="url" id="lien_paiement" required placeholder="https://checkout.revolut.com/pay/...">
+            </div>
+            
+            <div class="form-group">
+                <label>📊 Type de facturation:</label>
+                <select id="type_facturation" onchange="changerTypeFacturation()">
+                    <option value="duree">⏱️ À la durée</option>
+                    <option value="quantite">📦 À la quantité</option>
+                </select>
+            </div>
+            
+            <h3>📝 Prestations</h3>
+            <div id="prestations">
+                <div class="prestation">
+                    <div class="form-group">
+                        <label>📅 Date (JJ/MM/AAAA):</label>
+                        <input type="text" name="date" placeholder="07/09/2025" required>
+                    </div>
+                    <div class="form-group">
+                        <label>📋 Désignation:</label>
+                        <input type="text" name="designation" placeholder="Nettoyage Airbnb" required>
+                    </div>
+                    <div class="form-group" id="champ-duree">
+                        <label>⏱️ Durée:</label>
+                        <input type="text" name="duree" placeholder="1h30">
+                    </div>
+                    <div class="form-group hidden" id="champ-quantite">
+                        <label>📦 Quantité:</label>
+                        <input type="text" name="quantite" placeholder="1 ou 57 m²">
+                    </div>
+                    <div class="form-group">
+                        <label>💰 Prix unitaire (€):</label>
+                        <input type="number" step="0.01" name="prix_unitaire" required placeholder="40.00">
+                    </div>
+                    <button type="button" class="remove-btn" onclick="supprimerPrestation(this)">🗑️ Supprimer</button>
+                </div>
+            </div>
+            
+            <button type="button" class="add-btn" onclick="ajouterPrestation()">➕ Ajouter une prestation</button>
+            <br><br>
+            <button type="button" onclick="genererFacture()">🎉 Générer la Facture PDF</button>
+        </form>
+        
+        <div id="facturePreview">
+            <h3>📄 Aperçu de la Facture</h3>
+            <div id="factureContent"></div>
+            <button onclick="telechargerPDF()">💾 Télécharger le PDF</button>
+            <button onclick="masquerApercu()">✏️ Modifier</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration DEDICLEAN
+        const CONFIG = {
+            ENTREPRISE: "DEDICLEAN",
+            ADRESSE: "10D avenue du Lac, 21000 Dijon",
+            TEL: "0674230804",
+            EMAIL: "dedicimessa@gmail.com",
+            SIRET: "98890801800019",
+            TVA_INTRA: "FR18988908018",
+            MENTION: "TVA non applicable, article 293B du CGI (Entreprise Individuelle)",
+            IBAN: "FR76 2823 3000 0174 1129 4289 917",
+            BIC: "REVOFRP2"
+        };
+
+        function changerTypeFacturation() {
+            const type = document.getElementById('type_facturation').value;
+            const champsDuree = document.querySelectorAll('#champ-duree');
+            const champsQuantite = document.querySelectorAll('#champ-quantite');
+            
+            champsDuree.forEach(champ => champ.classList.toggle('hidden', type !== 'duree'));
+            champsQuantite.forEach(champ => champ.classList.toggle('hidden', type !== 'quantite'));
+        }
+
+        function ajouterPrestation() {
+            const prestationsDiv = document.getElementById('prestations');
+            const nouvellePrestation = document.querySelector('.prestation').cloneNode(true);
+            nouvellePrestation.querySelectorAll('input').forEach(input => input.value = '');
+            prestationsDiv.appendChild(nouvellePrestation);
+        }
+
+        function supprimerPrestation(bouton) {
+            if (document.querySelectorAll('.prestation').length > 1) {
+                bouton.closest('.prestation').remove();
+            } else {
+                alert('Au moins une prestation est requise');
+            }
+        }
+
+        function genererFacture() {
+            // Récupération des données
+            const data = {
+                client_nom: document.getElementById('client_nom').value,
+                client_adresse: document.getElementById('client_adresse').value,
+                mois_facture: document.getElementById('mois_facture').value,
+                lien_paiement: document.getElementById('lien_paiement').value,
+                type_facturation: document.getElementById('type_facturation').value,
+                numero_facture: `DC${new Date().toISOString().slice(0,10).replace(/-/g,'').slice(2)}-${Math.floor(Math.random()*1000).toString().padStart(3,'0')}`,
+                prestations: []
+            };
+
+            // Récupération des prestations
+            const prestations = document.querySelectorAll('.prestation');
+            prestations.forEach(prestation => {
+                const date = prestation.querySelector('[name="date"]').value;
+                const designation = prestation.querySelector('[name="designation"]').value;
+                const prix_unitaire = parseFloat(prestation.querySelector('[name="prix_unitaire"]').value);
+                const valeur = data.type_facturation === 'duree' 
+                    ? prestation.querySelector('[name="duree"]').value
+                    : prestation.querySelector('[name="quantite"]').value;
+
+                if (date && designation && !isNaN(prix_unitaire)) {
+                    data.prestations.push({ date, designation, prix_unitaire, valeur });
+                }
+            });
+
+            if (data.prestations.length === 0) {
+                alert('Veuillez saisir au moins une prestation valide');
+                return;
+            }
+
+            // Génération de l'aperçu HTML
+            const factureHTML = creerHTMLFacture(data);
+            document.getElementById('factureContent').innerHTML = factureHTML;
+            document.getElementById('facturePreview').style.display = 'block';
+            document.getElementById('factureForm').style.display = 'none';
+            
+            // Sauvegarde des données pour le PDF
+            window.factureData = data;
+        }
+
+        function creerHTMLFacture(data) {
+            const montantTotal = data.prestations.reduce((sum, p) => sum + p.prix_unitaire, 0);
+            const colonneType = data.type_facturation === 'quantite' ? 'Quantité' : 'Durée';
+
+            return `
+                <div style="font-family: Arial, sans-serif; padding: 20px; border: 2px solid #FF69B4; border-radius: 10px; background: white;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h1 style="color: #FF69B4; margin: 0;">DEDICLEAN</h1>
+                        <p style="margin: 5px 0;">${CONFIG.ADRESSE}<br>
+                        Tél: ${CONFIG.TEL} | ${CONFIG.EMAIL}<br>
+                        SIRET: ${CONFIG.SIRET} | TVA: ${CONFIG.TVA_INTRA}</p>
+                    </div>
+                    
+                    <h2 style="text-align: center; color: #FF69B4;">FACTURE ${data.mois_facture.toUpperCase()}</h2>
+                    
+                    <table style="width: 100%; margin-bottom: 20px; background: #FFE6F2; padding: 10px; border-radius: 5px;">
+                        <tr>
+                            <td><strong>Facture N° :</strong></td>
+                            <td>${data.numero_facture}</td>
+                            <td><strong>Date :</strong></td>
+                            <td>${new Date().toLocaleDateString('fr-FR')}</td>
+                        </tr>
+                    </table>
+                    
+                    <table style="width: 100%; margin-bottom: 20px; background: #FF69B4; color: white; padding: 10px; border-radius: 5px;">
+                        <tr><th colspan="2" style="text-align: left;">CLIENT</th></tr>
+                        <tr>
+                            <td style="width: 80px;"><strong>Nom :</strong></td>
+                            <td>${data.client_nom}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Adresse :</strong></td>
+                            <td>${data.client_adresse}</td>
+                        </tr>
+                    </table>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr style="background: #FF69B4; color: white;">
+                                <th style="padding: 10px; border: 1px solid #FF69B4;">Date</th>
+                                <th style="padding: 10px; border: 1px solid #FF69B4;">Prestation</th>
+                                <th style="padding: 10px; border: 1px solid #FF69B4;">${colonneType}</th>
+                                <th style="padding: 10px; border: 1px solid #FF69B4;">Prix HT</th>
+                                <th style="padding: 10px; border: 1px solid #FF69B4;">Total HT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.prestations.map(presta => `
+                                <tr style="background: ${data.prestations.indexOf(presta) % 2 === 0 ? '#FFF0F7' : 'white'};">
+                                    <td style="padding: 8px; border: 1px solid #ddd;">${presta.date}</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">${presta.designation}</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${presta.valeur}</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${presta.prix_unitaire.toFixed(2)} €</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${presta.prix_unitaire.toFixed(2)} €</td>
+                                </tr>
+                            `).join('')}
+                            <tr style="background: #FFE6F2; font-weight: bold;">
+                                <td colspan="3" style="padding: 10px; border: 1px solid #FF69B4;"></td>
+                                <td style="padding: 10px; border: 1px solid #FF69B4; text-align: right;">Total :</td>
+                                <td style="padding: 10px; border: 1px solid #FF69B4; text-align: right;">${montantTotal.toFixed(2)} €</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <strong>🔗 LIEN DE PAIEMENT :</strong><br>
+                        ${data.lien_paiement}
+                    </div>
+                    
+                    <div style="font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;">
+                        <strong>Coordonnées bancaires :</strong><br>
+                        IBAN : ${CONFIG.IBAN} | BIC : ${CONFIG.BIC}<br>
+                        ${CONFIG.MENTION}
+                    </div>
+                </div>
+            `;
+        }
+
+        function masquerApercu() {
+            document.getElementById('facturePreview').style.display = 'none';
+            document.getElementById('factureForm').style.display = 'block';
+        }
+
+        async function telechargerPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            const factureContent = document.getElementById('factureContent');
+            
+            // Utilisation de html2canvas pour capturer le contenu
+            const canvas = await html2canvas(factureContent);
+            const imgData = canvas.toDataURL('image/png');
+            
+            // Dimensions de la page A4
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            
+            // Calcul des dimensions de l'image pour qu'elle tienne sur la page
+            const imgWidth = pageWidth - 20; // Marge de 10px de chaque côté
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            // Ajout de l'image au PDF
+            doc.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+            
+            // Téléchargement
+            doc.save(`facture_${window.factureData.numero_facture}.pdf`);
+        }
+
+        // Initialisation
+        changerTypeFacturation();
+    </script>
+</body>
+</html>
