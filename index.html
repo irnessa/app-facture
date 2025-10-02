@@ -91,6 +91,13 @@
             background: white;
             border-radius: 10px;
         }
+        .logo-preview {
+            width: 80px;
+            height: 80px;
+            border: 2px solid var(--pink);
+            border-radius: 10px;
+            object-fit: contain;
+        }
     </style>
 </head>
 <body>
@@ -180,7 +187,8 @@
             TVA_INTRA: "FR18988908018",
             MENTION: "TVA non applicable, article 293B du CGI (Entreprise Individuelle)",
             IBAN: "FR76 2823 3000 0174 1129 4289 917",
-            BIC: "REVOFRP2"
+            BIC: "REVOFRP2",
+            LOGO_URL: "./logo.png"  // Logo local dans le même dossier
         };
 
         function changerTypeFacturation() {
@@ -254,50 +262,62 @@
             const colonneType = data.type_facturation === 'quantite' ? 'Quantité' : 'Durée';
 
             return `
-                <div style="font-family: Arial, sans-serif; padding: 20px; border: 2px solid #FF69B4; border-radius: 10px; background: white;">
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        <h1 style="color: #FF69B4; margin: 0;">DEDICLEAN</h1>
-                        <p style="margin: 5px 0;">${CONFIG.ADRESSE}<br>
-                        Tél: ${CONFIG.TEL} | ${CONFIG.EMAIL}<br>
-                        SIRET: ${CONFIG.SIRET} | TVA: ${CONFIG.TVA_INTRA}</p>
+                <div style="font-family: Arial, sans-serif; padding: 20px; border: 2px solid #FF69B4; border-radius: 10px; background: white; max-width: 800px; margin: 0 auto;">
+                    <!-- EN-TÊTE AVEC LOGO -->
+                    <div style="display: flex; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid #FF69B4; padding-bottom: 15px;">
+                        <img src="${CONFIG.LOGO_URL}" alt="DEDICLEAN Logo" style="width: 80px; height: 80px; margin-right: 20px; border: 2px solid #FF69B4; border-radius: 10px;">
+                        <div style="flex: 1;">
+                            <h1 style="color: #FF69B4; margin: 0 0 10px 0; font-size: 24px;">${CONFIG.ENTREPRISE}</h1>
+                            <p style="margin: 2px 0; font-size: 12px; color: #666; line-height: 1.4;">
+                                ${CONFIG.ADRESSE}<br>
+                                Tél: ${CONFIG.TEL} | Email: ${CONFIG.EMAIL}<br>
+                                SIRET: ${CONFIG.SIRET} | N° TVA: ${CONFIG.TVA_INTRA}
+                            </p>
+                        </div>
                     </div>
                     
-                    <h2 style="text-align: center; color: #FF69B4;">FACTURE ${data.mois_facture.toUpperCase()}</h2>
+                    <!-- TITRE FACTURE -->
+                    <h2 style="text-align: center; color: #FF69B4; margin: 0 0 20px 0; font-size: 20px;">FACTURE ${data.mois_facture.toUpperCase()}</h2>
                     
-                    <table style="width: 100%; margin-bottom: 20px; background: #FFE6F2; padding: 10px; border-radius: 5px;">
+                    <!-- INFOS FACTURE -->
+                    <table style="width: 100%; margin-bottom: 20px; background: #FFE6F2; padding: 10px; border-radius: 5px; border-collapse: collapse;">
                         <tr>
-                            <td><strong>Facture N° :</strong></td>
-                            <td>${data.numero_facture}</td>
-                            <td><strong>Date :</strong></td>
-                            <td>${new Date().toLocaleDateString('fr-FR')}</td>
+                            <td style="padding: 8px;"><strong>Facture N° :</strong></td>
+                            <td style="padding: 8px;">${data.numero_facture}</td>
+                            <td style="padding: 8px;"><strong>Date :</strong></td>
+                            <td style="padding: 8px;">${new Date().toLocaleDateString('fr-FR')}</td>
                         </tr>
                     </table>
                     
-                    <table style="width: 100%; margin-bottom: 20px; background: #FF69B4; color: white; padding: 10px; border-radius: 5px;">
-                        <tr><th colspan="2" style="text-align: left;">CLIENT</th></tr>
+                    <!-- INFOS CLIENT -->
+                    <table style="width: 100%; margin-bottom: 20px; background: #FF69B4; color: white; padding: 10px; border-radius: 5px; border-collapse: collapse;">
                         <tr>
-                            <td style="width: 80px;"><strong>Nom :</strong></td>
-                            <td>${data.client_nom}</td>
+                            <th colspan="2" style="text-align: left; padding: 10px; font-size: 16px;">CLIENT</th>
                         </tr>
                         <tr>
-                            <td><strong>Adresse :</strong></td>
-                            <td>${data.client_adresse}</td>
+                            <td style="width: 100px; padding: 8px; vertical-align: top;"><strong>Nom :</strong></td>
+                            <td style="padding: 8px;">${data.client_nom}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; vertical-align: top;"><strong>Adresse :</strong></td>
+                            <td style="padding: 8px;">${data.client_adresse}</td>
                         </tr>
                     </table>
                     
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                    <!-- TABLEAU PRESTATIONS -->
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
                         <thead>
                             <tr style="background: #FF69B4; color: white;">
-                                <th style="padding: 10px; border: 1px solid #FF69B4;">Date</th>
-                                <th style="padding: 10px; border: 1px solid #FF69B4;">Prestation</th>
-                                <th style="padding: 10px; border: 1px solid #FF69B4;">${colonneType}</th>
-                                <th style="padding: 10px; border: 1px solid #FF69B4;">Prix HT</th>
-                                <th style="padding: 10px; border: 1px solid #FF69B4;">Total HT</th>
+                                <th style="padding: 10px; border: 1px solid #FF69B4; text-align: left;">Date</th>
+                                <th style="padding: 10px; border: 1px solid #FF69B4; text-align: left;">Prestation</th>
+                                <th style="padding: 10px; border: 1px solid #FF69B4; text-align: center;">${colonneType}</th>
+                                <th style="padding: 10px; border: 1px solid #FF69B4; text-align: right;">Prix unitaire HT</th>
+                                <th style="padding: 10px; border: 1px solid #FF69B4; text-align: right;">Total HT</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.prestations.map(presta => `
-                                <tr style="background: ${data.prestations.indexOf(presta) % 2 === 0 ? '#FFF0F7' : 'white'};">
+                            ${data.prestations.map((presta, index) => `
+                                <tr style="background: ${index % 2 === 0 ? '#FFF0F7' : 'white'};">
                                     <td style="padding: 8px; border: 1px solid #ddd;">${presta.date}</td>
                                     <td style="padding: 8px; border: 1px solid #ddd;">${presta.designation}</td>
                                     <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${presta.valeur}</td>
@@ -306,21 +326,26 @@
                                 </tr>
                             `).join('')}
                             <tr style="background: #FFE6F2; font-weight: bold;">
-                                <td colspan="3" style="padding: 10px; border: 1px solid #FF69B4;"></td>
-                                <td style="padding: 10px; border: 1px solid #FF69B4; text-align: right;">Total :</td>
-                                <td style="padding: 10px; border: 1px solid #FF69B4; text-align: right;">${montantTotal.toFixed(2)} €</td>
+                                <td colspan="3" style="padding: 12px; border: 1px solid #FF69B4;"></td>
+                                <td style="padding: 12px; border: 1px solid #FF69B4; text-align: right;">Total :</td>
+                                <td style="padding: 12px; border: 1px solid #FF69B4; text-align: right;">${montantTotal.toFixed(2)} €</td>
                             </tr>
                         </tbody>
                     </table>
                     
-                    <div style="margin-bottom: 15px;">
-                        <strong>🔗 LIEN DE PAIEMENT :</strong><br>
-                        ${data.lien_paiement}
+                    <!-- LIEN DE PAIEMENT -->
+                    <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 5px;">
+                        <strong>🔗 LIEN DE PAIEMENT EN LIGNE :</strong><br>
+                        <a href="${data.lien_paiement}" style="color: #FF69B4; word-break: break-all;">${data.lien_paiement}</a>
                     </div>
                     
-                    <div style="font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;">
+                    <!-- COORDONNÉES BANCAIRES -->
+                    <div style="font-size: 11px; color: #666; border-top: 1px solid #ddd; padding-top: 10px; line-height: 1.4;">
+                        <strong>Conditions de paiement :</strong> Paiement à réception de facture<br>
+                        <strong>Modalités :</strong> Paiement en ligne (Revolut) ou virement bancaire<br><br>
                         <strong>Coordonnées bancaires :</strong><br>
-                        IBAN : ${CONFIG.IBAN} | BIC : ${CONFIG.BIC}<br>
+                        IBAN : ${CONFIG.IBAN}<br>
+                        BIC : ${CONFIG.BIC}<br><br>
                         ${CONFIG.MENTION}
                     </div>
                 </div>
@@ -338,23 +363,34 @@
             
             const factureContent = document.getElementById('factureContent');
             
-            // Utilisation de html2canvas pour capturer le contenu
-            const canvas = await html2canvas(factureContent);
-            const imgData = canvas.toDataURL('image/png');
-            
-            // Dimensions de la page A4
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const pageHeight = doc.internal.pageSize.getHeight();
-            
-            // Calcul des dimensions de l'image pour qu'elle tienne sur la page
-            const imgWidth = pageWidth - 20; // Marge de 10px de chaque côté
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            
-            // Ajout de l'image au PDF
-            doc.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-            
-            // Téléchargement
-            doc.save(`facture_${window.factureData.numero_facture}.pdf`);
+            try {
+                // Utilisation de html2canvas pour capturer le contenu
+                const canvas = await html2canvas(factureContent, {
+                    scale: 2, // Meilleure qualité
+                    useCORS: true, // Autorise les images externes
+                    logging: false
+                });
+                
+                const imgData = canvas.toDataURL('image/png');
+                
+                // Dimensions de la page A4
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                
+                // Calcul des dimensions de l'image
+                const imgWidth = pageWidth - 20;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                
+                // Ajout de l'image au PDF
+                doc.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+                
+                // Téléchargement
+                doc.save(`facture_${window.factureData.numero_facture}.pdf`);
+                
+            } catch (error) {
+                console.error('Erreur génération PDF:', error);
+                alert('Erreur lors de la génération du PDF. Vérifiez votre connexion.');
+            }
         }
 
         // Initialisation
